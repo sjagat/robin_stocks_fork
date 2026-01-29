@@ -860,3 +860,39 @@ def build_user_profile(account_number=None):
     user['dividend_total'] = get_total_dividends()
 
     return(user)
+
+@login_required
+def set_price_alert(symbol, price, direction="above", info=None):
+    """Sets a price alert for a given symbol.
+
+    :param symbol: The stock ticker symbol.
+    :type symbol: str
+    :param price: The target price.
+    :type price: float
+    :param direction: 'above' or 'below'.
+    :type direction: str
+    :param info: Will filter the results to get a specific value.
+    :type info: Optional[str]
+    :returns: The response from the API.
+
+    """
+    instrument_id = id_for_stock(symbol)
+    if not instrument_id:
+        print('Could not find instrument ID for {}'.format(symbol), file=get_output())
+        return None
+
+    url = "https://api.robinhood.com/midlands/notification_settings/instruments/{}/?allow_multiple=true&sort_by=created_at".format(instrument_id)
+
+    setting_type = "price_above" if direction == "above" else "price_below"
+    payload = {
+        "settings": [
+            {
+                "enabled": True,
+                "price": str(price),
+                "setting_type": setting_type
+            }
+        ]
+    }
+
+    data = request_post(url, payload, json=True)
+    return(filter_data(data, info))
